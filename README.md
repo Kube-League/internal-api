@@ -14,3 +14,4 @@ A centralize way to:
 - Gorm
 - InfluxDB3-go
 - Go-Redis
+- Go-TOML
