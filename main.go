@@ -4,6 +4,7 @@ import (
 	"github.com/gorilla/mux"
 	"internal-api/src/config"
 	"internal-api/src/db/sql"
+	"internal-api/src/routes"
 	"log"
 	"net/http"
 	"time"
@@ -19,6 +20,15 @@ func main() {
 	}
 
 	r := mux.NewRouter()
+
+	r.HandleFunc("/", routes.Root)
+	r.HandleFunc("/team", routes.Team)
+	r.HandleFunc("/teams", routes.Teams)
+	//r.HandleFunc("/team/{id:[0-9]+}", routes.TeamId).
+	//	Name("team (id)")
+	//r.HandleFunc("/team/{name}", routes.TeamName).
+	//	Name("team (name)")
+
 	srv := &http.Server{
 		Handler: r,
 		Addr:    "127.0.0.1",

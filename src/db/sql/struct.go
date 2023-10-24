@@ -7,19 +7,19 @@ import (
 
 type Team struct {
 	gorm.Model
-	Name    string
-	Motto   string
-	Logo    string
-	Country string
-	Town    string
+	Name    string `gorm:"unique;" json:"name"`
+	Motto   string `json:"motto"`
+	Logo    string `gorm:"unique;" json:"logo"`
+	Country string `json:"country"`
+	Town    string `json:"town"`
 }
 
 type Player struct {
 	gorm.Model
-	LastName  string
-	Uuid      string
-	DiscordId string
-	Team      Team
+	LastName  string `json:"name"`
+	Uuid      string `gorm:"unique;" json:"uuid"`
+	DiscordId string `gorm:"unique;" json:"discord_id"`
+	Team      Team   `json:"team"`
 }
 
 type Match struct {
@@ -39,8 +39,8 @@ type MatchResult struct {
 
 type PlayerMatchResult struct {
 	gorm.Model
-	Player       Player
-	Kills        uint
-	Death        uint
-	PointsScored uint
+	Player       Player `json:"player"`
+	Kills        uint   `json:"kills"`
+	Death        uint   `json:"death"`
+	PointsScored uint   `json:"points_scored"`
 }
