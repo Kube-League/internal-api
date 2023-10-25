@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/mux"
 	"internal-api/src/config"
 	"internal-api/src/db/sql"
-	"internal-api/src/routes"
+	"internal-api/src/middleware"
 	"log"
 	"net/http"
 	"time"
@@ -21,13 +21,15 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", routes.Root)
-	r.HandleFunc("/team", routes.Team)
-	r.HandleFunc("/teams", routes.Teams)
-	//r.HandleFunc("/team/{id:[0-9]+}", routes.TeamId).
-	//	Name("team (id)")
-	//r.HandleFunc("/team/{name}", routes.TeamName).
-	//	Name("team (name)")
+	r.HandleFunc("/", middleware.Root)
+	// team
+	r.HandleFunc("/team", middleware.Team)
+	r.HandleFunc("/teams", middleware.Teams)
+	r.HandleFunc("/team/{id:[0-9]+}", middleware.TeamId).
+		Name("team (id)")
+	r.HandleFunc("/team/{name}", middleware.TeamName).
+		Name("team (name)")
+	// player
 
 	srv := &http.Server{
 		Handler: r,

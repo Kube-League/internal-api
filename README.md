@@ -16,3 +16,4 @@ A centralize way to:
 - Go-Redis
 - pelletier/Go-TOML
 - Gorilla/mux
+- Postgres / Redis / Influx DB
