@@ -43,9 +43,9 @@ func Players(w http.ResponseWriter, r *http.Request) {
 		h.badMethod()
 		return
 	}
-	var teams []sql.Player
-	sql.DB.Find(&teams)
-	h.respond(teams)
+	var players []sql.Player
+	sql.DB.Find(&players)
+	h.respond(players)
 }
 
 func PlayerId(w http.ResponseWriter, r *http.Request) {

@@ -41,7 +41,12 @@ func main() {
 	r.HandleFunc("/player/name/{name}", handler.PlayerName).
 		Name("player (name)")
 	// match
-	r.HandleFunc("/player", handler.Match)
+	r.HandleFunc("/match", handler.Match)
+	r.HandleFunc("/matches", handler.Matches)
+	r.HandleFunc("/team/id/{id:[0-9]+}", handler.MatchId).
+		Name("match (id)")
+	r.HandleFunc("/team/time/{time:[0-9]+}", handler.MatchTime).
+		Name("match (name)")
 
 	srv := &http.Server{
 		Handler: r,
