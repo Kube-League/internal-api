@@ -127,10 +127,10 @@ func TeamName(w http.ResponseWriter, r *http.Request) {
 func (a *askTeam) preload() *gorm.DB {
 	b := sql.DB.Model(&sql.Team{})
 	if a.Matches {
-		b.Preload("Matches").Preload("MatchesWon").Preload("Results")
+		b = b.Preload("Matches").Preload("MatchesWon").Preload("Results")
 	}
 	if a.Players {
-		b.Preload("Players")
+		b = b.Preload("Players")
 	}
 	return b
 }

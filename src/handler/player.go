@@ -11,6 +11,10 @@ import (
 	"net/http"
 )
 
+type askPlayer struct {
+	Results bool `json:"resul"`
+}
+
 func Player(w http.ResponseWriter, r *http.Request) {
 	h := handler{Id: "Player", W: w}
 	if r.Method != http.MethodPost {
@@ -44,7 +48,13 @@ func Players(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var players []sql.Player
-	err := sql.DB.Find(&players).Error
+	var err error
+	a, ok := generateAskPlayer(r)
+	if ok {
+		err = a.preload().Find(&players).Error
+	} else {
+		err = sql.DB.Find(&players).Error
+	}
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		h.notNil(err)
 		return
@@ -69,7 +79,13 @@ func PlayerId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player sql.Player
-	err := sql.DB.First(&player, id).Error
+	var err error
+	a, ok := generateAskPlayer(r)
+	if ok {
+		err = a.preload().First(&player, id).Error
+	} else {
+		err = sql.DB.First(&player, id).Error
+	}
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		h.notNil(err)
 		return
@@ -93,7 +109,13 @@ func PlayerName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player sql.Player
-	err := h.query(sql.DB, &player, "last_name = ?", name)
+	var err error
+	a, ok := generateAskPlayer(r)
+	if ok {
+		err = h.query(a.preload(), &player, "last_name = ?", name)
+	} else {
+		err = h.query(sql.DB, &player, "last_name = ?", name)
+	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		h.respondCode(http.StatusNotFound, "Player not found")
 		return
@@ -114,7 +136,13 @@ func PlayerUuid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player sql.Player
-	err := h.query(sql.DB, &player, "uuid = ?", uuid)
+	var err error
+	a, ok := generateAskPlayer(r)
+	if ok {
+		err = h.query(a.preload(), &player, "uuid = ?", uuid)
+	} else {
+		err = h.query(sql.DB, &player, "uuid = ?", uuid)
+	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		h.respondCode(http.StatusNotFound, "Player not found")
 		return
@@ -135,10 +163,39 @@ func PlayerDiscord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player sql.Player
-	err := h.query(sql.DB, &player, "discord_id = ?", id)
+	var err error
+	a, ok := generateAskPlayer(r)
+	if ok {
+		err = h.query(a.preload(), &player, "discord_id = ?", id)
+	} else {
+		err = h.query(sql.DB, &player, "discord_id = ?", id)
+	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		h.respondCode(http.StatusNotFound, "Player not found")
 		return
 	}
 	h.respond(player)
+}
+
+func (a *askPlayer) preload() *gorm.DB {
+	b := sql.DB.Model(&sql.Team{})
+	if a.Results {
+		b = b.Preload("Results")
+	}
+	return b
+}
+
+func generateAskPlayer(r *http.Request) (askPlayer, bool) {
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return askPlayer{}, false
+	}
+	var a askPlayer
+	err = json.Unmarshal(b, &a)
+	if err != nil {
+		l := utils.Log{Id: "handler.generateAskPlayer"}
+		l.Error(err)
+		return askPlayer{}, false
+	}
+	return a, true
 }
