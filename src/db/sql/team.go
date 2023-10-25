@@ -1,6 +1,8 @@
 package sql
 
-import "internal-api/src/utils"
+import (
+	"internal-api/src/utils"
+)
 
 type TeamInfo struct {
 	Name    string
