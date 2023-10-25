@@ -11,6 +11,11 @@ import (
 	"net/http"
 )
 
+type askMatch struct {
+	Results      bool `json:"result"`
+	Participants bool `json:"participants"`
+}
+
 func Match(w http.ResponseWriter, r *http.Request) {
 	h := handler{Id: "Match", W: w}
 	if r.Method != http.MethodPost {
@@ -44,7 +49,21 @@ func Matches(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var matches []sql.Match
-	sql.DB.Find(&matches)
+	var err error
+	var a askMatch
+	ok := generateAsk(&a, r)
+	if ok {
+		err = a.preload().Find(&matches).Error
+	} else {
+		err = sql.DB.Find(&matches).Error
+	}
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		h.notNil(err)
+		return
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		h.respondCode(http.StatusNotFound, "No players found")
+		return
+	}
 	h.respond(matches)
 }
 
@@ -62,7 +81,14 @@ func MatchId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var match sql.Match
-	err := sql.DB.First(&match, id).Error
+	var err error
+	var a askMatch
+	ok = generateAsk(&a, r)
+	if ok {
+		err = a.preload().First(&match, id).Error
+	} else {
+		err = sql.DB.First(&match, id).Error
+	}
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		h.notNil(err)
 		return
@@ -86,10 +112,28 @@ func MatchTime(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var match sql.Match
-	err := h.query(&match, "date = ?", t)
+	var err error
+	var a askMatch
+	ok = generateAsk(&a, r)
+	if ok {
+		err = h.query(a.preload(), &match, "date = ?", t)
+	} else {
+		err = h.query(sql.DB, &match, "date = ?", t)
+	}
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		h.respondCode(http.StatusNotFound, "Player not found")
 		return
 	}
 	h.respond(match)
+}
+
+func (a *askMatch) preload() *gorm.DB {
+	b := sql.DB.Model(&sql.Team{})
+	if a.Results {
+		b = b.Preload("Results").Preload("PlayerMatchResult")
+	}
+	if a.Participants {
+		b = b.Preload("Participants")
+	}
+	return b
 }

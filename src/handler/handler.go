@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"gorm.io/gorm"
 	"internal-api/src/utils"
+	"io"
 	"net/http"
 )
 
@@ -58,4 +60,18 @@ func (h *handler) query(db *gorm.DB, dest interface{}, condition string, args ..
 		return nil
 	}
 	return err
+}
+
+func generateAsk(dest interface{}, r *http.Request) bool {
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return false
+	}
+	err = json.Unmarshal(b, dest)
+	if err != nil {
+		l := utils.Log{Id: "handler.generateAsk"}
+		l.Error(err)
+		return false
+	}
+	return true
 }

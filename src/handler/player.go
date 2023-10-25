@@ -12,7 +12,7 @@ import (
 )
 
 type askPlayer struct {
-	Results bool `json:"resul"`
+	Results bool `json:"result"`
 }
 
 func Player(w http.ResponseWriter, r *http.Request) {
@@ -49,7 +49,8 @@ func Players(w http.ResponseWriter, r *http.Request) {
 	}
 	var players []sql.Player
 	var err error
-	a, ok := generateAskPlayer(r)
+	var a askPlayer
+	ok := generateAsk(&a, r)
 	if ok {
 		err = a.preload().Find(&players).Error
 	} else {
@@ -80,7 +81,8 @@ func PlayerId(w http.ResponseWriter, r *http.Request) {
 	}
 	var player sql.Player
 	var err error
-	a, ok := generateAskPlayer(r)
+	var a askPlayer
+	ok = generateAsk(&a, r)
 	if ok {
 		err = a.preload().First(&player, id).Error
 	} else {
@@ -110,7 +112,8 @@ func PlayerName(w http.ResponseWriter, r *http.Request) {
 	}
 	var player sql.Player
 	var err error
-	a, ok := generateAskPlayer(r)
+	var a askPlayer
+	ok = generateAsk(&a, r)
 	if ok {
 		err = h.query(a.preload(), &player, "last_name = ?", name)
 	} else {
@@ -137,7 +140,8 @@ func PlayerUuid(w http.ResponseWriter, r *http.Request) {
 	}
 	var player sql.Player
 	var err error
-	a, ok := generateAskPlayer(r)
+	var a askPlayer
+	ok = generateAsk(&a, r)
 	if ok {
 		err = h.query(a.preload(), &player, "uuid = ?", uuid)
 	} else {
@@ -164,7 +168,8 @@ func PlayerDiscord(w http.ResponseWriter, r *http.Request) {
 	}
 	var player sql.Player
 	var err error
-	a, ok := generateAskPlayer(r)
+	var a askPlayer
+	ok = generateAsk(&a, r)
 	if ok {
 		err = h.query(a.preload(), &player, "discord_id = ?", id)
 	} else {
@@ -183,19 +188,4 @@ func (a *askPlayer) preload() *gorm.DB {
 		b = b.Preload("Results")
 	}
 	return b
-}
-
-func generateAskPlayer(r *http.Request) (askPlayer, bool) {
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		return askPlayer{}, false
-	}
-	var a askPlayer
-	err = json.Unmarshal(b, &a)
-	if err != nil {
-		l := utils.Log{Id: "handler.generateAskPlayer"}
-		l.Error(err)
-		return askPlayer{}, false
-	}
-	return a, true
 }

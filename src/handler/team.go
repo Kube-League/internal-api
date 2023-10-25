@@ -50,7 +50,8 @@ func Teams(w http.ResponseWriter, r *http.Request) {
 	}
 	var teams []sql.Team
 	var err error
-	a, ok := generateAskTeam(r)
+	var a askTeam
+	ok := generateAsk(&a, r)
 	if ok {
 		err = a.preload().Find(&teams).Error
 	} else {
@@ -81,7 +82,8 @@ func TeamId(w http.ResponseWriter, r *http.Request) {
 	}
 	var team sql.Team
 	var err error
-	a, ok := generateAskTeam(r)
+	var a askTeam
+	ok = generateAsk(&a, r)
 	if ok {
 		err = a.preload().First(&team, id).Error
 	} else {
@@ -111,7 +113,8 @@ func TeamName(w http.ResponseWriter, r *http.Request) {
 	}
 	var team sql.Team
 	var err error
-	a, ok := generateAskTeam(r)
+	var a askTeam
+	ok = generateAsk(&a, r)
 	if ok {
 		err = h.query(a.preload(), &team, "name = ?", name)
 	} else {
@@ -133,19 +136,4 @@ func (a *askTeam) preload() *gorm.DB {
 		b = b.Preload("Players")
 	}
 	return b
-}
-
-func generateAskTeam(r *http.Request) (askTeam, bool) {
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		return askTeam{}, false
-	}
-	var a askTeam
-	err = json.Unmarshal(b, &a)
-	if err != nil {
-		l := utils.Log{Id: "handler.generateAskTeam"}
-		l.Error(err)
-		return askTeam{}, false
-	}
-	return a, true
 }
