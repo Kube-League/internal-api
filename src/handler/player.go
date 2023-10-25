@@ -183,7 +183,7 @@ func PlayerDiscord(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *askPlayer) preload() *gorm.DB {
-	b := sql.DB.Model(&sql.Team{})
+	b := sql.DB.Model(&sql.Player{})
 	if a.Results {
 		b = b.Preload("Results")
 	}

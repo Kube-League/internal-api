@@ -127,8 +127,76 @@ func MatchTime(w http.ResponseWriter, r *http.Request) {
 	h.respond(match)
 }
 
+func MatchResult(w http.ResponseWriter, r *http.Request) {
+	h := handler{Id: "MatchResult", W: w}
+	allowed := []string{http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodPost}
+	if !utils.ArrStringContains(allowed, r.Method) {
+		h.badMethod()
+		return
+	}
+	p := mux.Vars(r)
+	id, ok := p["id"]
+	if !ok {
+		h.respondCode(http.StatusBadRequest, "Missing id")
+		return
+	}
+	var match sql.Match
+	var err error
+	switch r.Method {
+	case http.MethodGet:
+		err = sql.DB.Model(&sql.Match{}).
+			Preload("Results").
+			Preload("PlayersResult").
+			First(&match, id).
+			Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			h.notNil(err)
+			return
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			h.respondCode(http.StatusNotFound, "Match and result not found")
+			return
+		}
+		for _, res := range match.Results {
+			for _, pres := range match.PlayersResult {
+				if pres.TeamResultID == res.ID {
+					res.PlayersResult = append(res.PlayersResult, pres)
+				}
+			}
+		}
+		h.respond(match.Results)
+	case http.MethodPost:
+		err = sql.DB.Model(&sql.Match{}).First(&match, id).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			h.notNil(err)
+			return
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			h.respondCode(http.StatusNotFound, "Match not found")
+			return
+		}
+		b, err := io.ReadAll(r.Body)
+		if err != nil {
+			h.notNil(err)
+			return
+		}
+		var info sql.ResultInfo
+		err = json.Unmarshal(b, &info)
+		if err != nil {
+			h.notNil(err)
+			return
+		}
+		err = sql.DB.Create(&info).Error
+		if err != nil {
+			h.notNil(err)
+			return
+		}
+		h.respond(info)
+	default:
+		h.badMethod()
+	}
+}
+
 func (a *askMatch) preload() *gorm.DB {
-	b := sql.DB.Model(&sql.Team{})
+	b := sql.DB.Model(&sql.Match{})
 	if a.Results {
 		b = b.Preload("Results").Preload("PlayerMatchResult")
 	}

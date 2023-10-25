@@ -33,7 +33,7 @@ type Match struct {
 	WinnerID      uint                `json:"winner"`
 	Participants  []Team              `gorm:"many2many:match_teams;" json:"participants"`
 	PlayersResult []PlayerMatchResult `json:"players_result"`
-	Results       []TeamResult        `gorm:"many2many:match_team_results;" json:"team_results"`
+	Results       []TeamResult        `json:"team_results"`
 }
 
 type TeamResult struct {
@@ -42,7 +42,6 @@ type TeamResult struct {
 	TeamID        uint                `json:"team_id"`
 	Points        uint                `json:"points"`
 	PlayersResult []PlayerMatchResult `json:"players_result"`
-	Matches       []Match             `gorm:"many2many:match_team_results;" json:"matches"`
 }
 
 type PlayerMatchResult struct {

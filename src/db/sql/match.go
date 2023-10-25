@@ -6,8 +6,22 @@ import (
 )
 
 type MatchInfo struct {
-	Date         int64
-	Participants []uint
+	Date         int64  `json:"date"`
+	Participants []uint `json:"participants"`
+}
+
+type ResultInfo struct {
+	MatchId     uint `json:"match_id"`
+	TeamResults []struct {
+		TeamID        uint `json:"team_id"`
+		Points        uint `json:"points"`
+		PlayerResults []struct {
+			PlayerID     uint `json:"player_id"`
+			Kills        uint `json:"kills"`
+			Death        uint `json:"death"`
+			PointsScored uint `json:"points_scored"`
+		} `json:"player_results"`
+	} `json:"team_results"`
 }
 
 func (m *MatchInfo) Match() (Match, error) {
@@ -26,6 +40,29 @@ func (m *MatchInfo) Match() (Match, error) {
 		Date:         time.Time{},
 		Participants: parts,
 	}, nil
+}
+
+func (r *ResultInfo) Result() []TeamResult {
+	var results []TeamResult
+	for _, res := range r.TeamResults {
+		var pResults []PlayerMatchResult
+		for _, pRes := range res.PlayerResults {
+			pResults = append(pResults, PlayerMatchResult{
+				MatchID:      r.MatchId,
+				PlayerID:     pRes.PlayerID,
+				Kills:        pRes.Kills,
+				Death:        pRes.Death,
+				PointsScored: pRes.PointsScored,
+			})
+		}
+		results = append(results, TeamResult{
+			MatchID:       r.MatchId,
+			TeamID:        res.TeamID,
+			Points:        res.Points,
+			PlayersResult: pResults,
+		})
+	}
+	return results
 }
 
 func CreateMatch(info MatchInfo) (uint, error) {

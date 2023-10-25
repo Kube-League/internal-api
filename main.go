@@ -43,10 +43,13 @@ func main() {
 	// match
 	r.HandleFunc("/match", handler.Match)
 	r.HandleFunc("/matches", handler.Matches)
-	r.HandleFunc("/team/id/{id:[0-9]+}", handler.MatchId).
+	r.HandleFunc("/match/id/{id:[0-9]+}", handler.MatchId).
 		Name("match (id)")
-	r.HandleFunc("/team/time/{time:[0-9]+}", handler.MatchTime).
+	r.HandleFunc("/match/time/{time:[0-9]+}", handler.MatchTime).
 		Name("match (name)")
+	// match result
+	r.HandleFunc("/match/id/{id:[0-9]+}/results", handler.MatchResult).
+		Name("match results (id)")
 
 	srv := &http.Server{
 		Handler: r,
