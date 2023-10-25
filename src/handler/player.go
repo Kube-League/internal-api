@@ -44,7 +44,14 @@ func Players(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var players []sql.Player
-	sql.DB.Find(&players)
+	err := sql.DB.Find(&players).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		h.notNil(err)
+		return
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		h.respondCode(http.StatusNotFound, "No players found")
+		return
+	}
 	h.respond(players)
 }
 
@@ -86,7 +93,7 @@ func PlayerName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player sql.Player
-	err := h.query(&player, "last_name = ?", name)
+	err := h.query(sql.DB, &player, "last_name = ?", name)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		h.respondCode(http.StatusNotFound, "Player not found")
 		return
@@ -107,7 +114,7 @@ func PlayerUuid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player sql.Player
-	err := h.query(&player, "uuid = ?", uuid)
+	err := h.query(sql.DB, &player, "uuid = ?", uuid)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		h.respondCode(http.StatusNotFound, "Player not found")
 		return
@@ -128,7 +135,7 @@ func PlayerDiscord(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var player sql.Player
-	err := h.query(&player, "discord_id = ?", id)
+	err := h.query(sql.DB, &player, "discord_id = ?", id)
 	if errors.Is(err, gorm.ErrRecordNotFound) {
 		h.respondCode(http.StatusNotFound, "Player not found")
 		return

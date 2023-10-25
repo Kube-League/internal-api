@@ -11,6 +11,11 @@ import (
 	"net/http"
 )
 
+type askTeam struct {
+	Matches bool `json:"matches"`
+	Players bool `json:"players"`
+}
+
 func Team(w http.ResponseWriter, r *http.Request) {
 	h := handler{Id: "Team", W: w}
 	if r.Method != http.MethodPost {
@@ -44,7 +49,20 @@ func Teams(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var teams []sql.Team
-	sql.DB.Find(&teams)
+	var err error
+	a, ok := generateAskTeam(r)
+	if ok {
+		err = a.preload().Find(&teams).Error
+	} else {
+		err = sql.DB.Find(&teams).Error
+	}
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		h.notNil(err)
+		return
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		h.respondCode(http.StatusNotFound, "No teams found")
+		return
+	}
 	h.respond(teams)
 }
 
@@ -62,7 +80,13 @@ func TeamId(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var team sql.Team
-	err := sql.DB.First(&team, id).Error
+	var err error
+	a, ok := generateAskTeam(r)
+	if ok {
+		err = a.preload().First(&team, id).Error
+	} else {
+		err = sql.DB.First(&team, id).Error
+	}
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
 		h.notNil(err)
 		return
@@ -86,13 +110,42 @@ func TeamName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var team sql.Team
-	err := sql.DB.First(&team).Where("name = ?", name).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		h.notNil(err)
-		return
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+	var err error
+	a, ok := generateAskTeam(r)
+	if ok {
+		err = h.query(a.preload(), &team, "name = ?", name)
+	} else {
+		err = h.query(sql.DB, &team, "name = ?", name)
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		h.respondCode(http.StatusNotFound, "Team not found")
 		return
 	}
 	h.respond(team)
+}
+
+func (a *askTeam) preload() *gorm.DB {
+	b := sql.DB.Model(&sql.Team{})
+	if a.Matches {
+		b.Preload("Matches").Preload("MatchesWon").Preload("Results")
+	}
+	if a.Players {
+		b.Preload("Players")
+	}
+	return b
+}
+
+func generateAskTeam(r *http.Request) (askTeam, bool) {
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		return askTeam{}, false
+	}
+	var a askTeam
+	err = json.Unmarshal(b, &a)
+	if err != nil {
+		l := utils.Log{Id: "handler.generateAskTeam"}
+		l.Error(err)
+		return askTeam{}, false
+	}
+	return a, true
 }
