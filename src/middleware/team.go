@@ -28,7 +28,12 @@ func Team(w http.ResponseWriter, r *http.Request) {
 		h.notNil(err)
 		return
 	}
-	id := sql.CreateTeam(info)
+	id, err := sql.CreateTeam(info)
+	if err != nil {
+		//TODO: handle same name
+		h.notNil(err)
+		return
+	}
 	h.respond(id)
 }
 

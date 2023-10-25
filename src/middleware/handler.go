@@ -1,6 +1,9 @@
 package middleware
 
 import (
+	"errors"
+	"gorm.io/gorm"
+	"internal-api/src/db/sql"
 	"internal-api/src/utils"
 	"net/http"
 )
@@ -47,4 +50,13 @@ func (h *handler) respondCode(code int, data any) {
 		return
 	}
 	h.W.Write(b)
+}
+
+func (h *handler) query(dest interface{}, condition string, args ...string) error {
+	err := sql.DB.First(dest).Where(condition, args).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		h.notNil(err)
+		return nil
+	}
+	return err
 }

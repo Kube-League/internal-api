@@ -20,12 +20,13 @@ func (t *TeamInfo) Team() Team {
 	}
 }
 
-func CreateTeam(info TeamInfo) uint {
+func CreateTeam(info TeamInfo) (uint, error) {
 	t := info.Team()
-	r := DB.Create(&t)
-	if r.Error != nil {
-		utils.LogError("sql.CreateTeam", r.Error)
-		return 0
+	l := utils.Log{Id: "sql.CreateTeam"}
+	err := DB.Create(&t).Error
+	if err != nil {
+		l.Error(err)
+		return 0, err
 	}
-	return t.ID
+	return t.ID, nil
 }
