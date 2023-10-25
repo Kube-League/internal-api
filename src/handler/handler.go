@@ -1,4 +1,4 @@
-package middleware
+package handler
 
 import (
 	"errors"
@@ -14,12 +14,12 @@ type handler struct {
 }
 
 func Root(w http.ResponseWriter, r *http.Request) {
-	h := handler{Id: "middleware.Root", W: w}
+	h := handler{Id: "handler.Root", W: w}
 	h.respond("Hey :3")
 }
 
 func (h *handler) getId() string {
-	return "middleware." + h.Id
+	return "handler." + h.Id
 }
 
 func (h *handler) notNil(err error) {

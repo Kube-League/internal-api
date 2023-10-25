@@ -4,7 +4,7 @@ import (
 	"github.com/gorilla/mux"
 	"internal-api/src/config"
 	"internal-api/src/db/sql"
-	"internal-api/src/middleware"
+	"internal-api/src/handler"
 	"log"
 	"net/http"
 	"time"
@@ -21,24 +21,24 @@ func main() {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", middleware.Root)
+	r.HandleFunc("/", handler.Root)
 	// team
-	r.HandleFunc("/team", middleware.Team)
-	r.HandleFunc("/teams", middleware.Teams)
-	r.HandleFunc("/team/id/{id:[0-9]+}", middleware.TeamId).
+	r.HandleFunc("/team", handler.Team)
+	r.HandleFunc("/teams", handler.Teams)
+	r.HandleFunc("/team/id/{id:[0-9]+}", handler.TeamId).
 		Name("team (id)")
-	r.HandleFunc("/team/name/{name}", middleware.TeamName).
+	r.HandleFunc("/team/name/{name}", handler.TeamName).
 		Name("team (name)")
 	// player
-	r.HandleFunc("/player", middleware.Player)
-	r.HandleFunc("/players", middleware.Players)
-	r.HandleFunc("/player/id/{id:[0-9]+}", middleware.PlayerId).
+	r.HandleFunc("/player", handler.Player)
+	r.HandleFunc("/players", handler.Players)
+	r.HandleFunc("/player/id/{id:[0-9]+}", handler.PlayerId).
 		Name("player (id)")
-	r.HandleFunc("/player/uuid/{uuid:\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b}", middleware.PlayerUuid).
+	r.HandleFunc("/player/uuid/{uuid:\b[0-9a-f]{8}\b-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-\b[0-9a-f]{12}\b}", handler.PlayerUuid).
 		Name("player (uuid)")
-	r.HandleFunc("/player/discord/{id:[0-9]{18}", middleware.PlayerDiscord).
+	r.HandleFunc("/player/discord/{id:[0-9]{18}", handler.PlayerDiscord).
 		Name("player (discord)")
-	r.HandleFunc("/player/name/{name}", middleware.PlayerName).
+	r.HandleFunc("/player/name/{name}", handler.PlayerName).
 		Name("player (name)")
 	srv := &http.Server{
 		Handler: r,
