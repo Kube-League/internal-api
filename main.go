@@ -40,6 +40,9 @@ func main() {
 		Name("player (discord)")
 	r.HandleFunc("/player/name/{name}", handler.PlayerName).
 		Name("player (name)")
+	// match
+	r.HandleFunc("/player", handler.Match)
+
 	srv := &http.Server{
 		Handler: r,
 		Addr:    "127.0.0.1",
