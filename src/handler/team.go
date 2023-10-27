@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 	"internal-api/src/db/sql"
@@ -44,32 +43,39 @@ func Team(w http.ResponseWriter, r *http.Request) {
 
 func Teams(w http.ResponseWriter, r *http.Request) {
 	h := handler{Id: "Teams", W: w}
-	if r.Method != http.MethodGet {
+	allowed := []string{http.MethodGet, http.MethodDelete}
+	if !utils.ArrStringContains(allowed, r.Method) {
 		h.badMethod()
 		return
 	}
-	var teams []sql.Team
-	var err error
-	var a askTeam
-	ok := generateAsk(&a, r)
-	if ok {
-		err = a.preload().Find(&teams).Error
-	} else {
-		err = sql.DB.Find(&teams).Error
+	switch r.Method {
+	case http.MethodGet:
+		var teams []sql.Team
+		var err error
+		var a askTeam
+		ok := generateAsk(&a, r)
+		if ok {
+			err = a.preload().Find(&teams).Error
+		} else {
+			err = sql.DB.Find(&teams).Error
+		}
+		if !h.found(err) {
+			return
+		}
+		h.respond(teams)
+	case http.MethodDelete:
+		err := sql.DB.Exec("DELETE FROM teams").Error
+		if err != nil {
+			h.notNil(err)
+			return
+		}
+		h.respond("Deleted")
 	}
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		h.notNil(err)
-		return
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "No teams found")
-		return
-	}
-	h.respond(teams)
 }
 
 func TeamId(w http.ResponseWriter, r *http.Request) {
 	h := handler{Id: "TeamId", W: w}
-	allowed := []string{http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPatch}
+	allowed := []string{http.MethodGet, http.MethodPut, http.MethodDelete}
 	if !utils.ArrStringContains(allowed, r.Method) {
 		h.badMethod()
 		return
@@ -89,11 +95,7 @@ func TeamId(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = sql.DB.First(&team, id).Error
 	}
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		h.notNil(err)
-		return
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "Team not found")
+	if !h.found(err) {
 		return
 	}
 	h.respond(team)
@@ -120,8 +122,7 @@ func TeamName(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = h.query(sql.DB, &team, "name = ?", name)
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "Team not found")
+	if !h.found(err) {
 		return
 	}
 	h.respond(team)

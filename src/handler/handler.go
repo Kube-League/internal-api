@@ -62,6 +62,17 @@ func (h *handler) query(db *gorm.DB, dest interface{}, condition string, args ..
 	return err
 }
 
+func (h *handler) found(err error) bool {
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		h.notNil(err)
+		return false
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		h.respondCode(http.StatusNotFound, h.Id+" not found")
+		return false
+	}
+	return true
+}
+
 func generateAsk(dest interface{}, r *http.Request) bool {
 	b, err := io.ReadAll(r.Body)
 	if err != nil {

@@ -149,11 +149,7 @@ func MatchResult(w http.ResponseWriter, r *http.Request) {
 			Preload("PlayersResult").
 			First(&match, id).
 			Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			h.notNil(err)
-			return
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			h.respondCode(http.StatusNotFound, "Match and result not found")
+		if !h.found(err) {
 			return
 		}
 		for _, res := range match.Results {
@@ -178,11 +174,7 @@ func MatchResult(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		err = sql.DB.Model(&sql.Match{}).First(&match, id).Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			h.notNil(err)
-			return
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			h.respondCode(http.StatusNotFound, "Match not found")
+		if !h.found(err) {
 			return
 		}
 		res := info.Result()
@@ -198,11 +190,7 @@ func MatchResult(w http.ResponseWriter, r *http.Request) {
 			Preload("PlayersResult").
 			First(&match, id).
 			Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			h.notNil(err)
-			return
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			h.respondCode(http.StatusNotFound, "Match and result not found")
+		if !h.found(err) {
 			return
 		}
 		sql.DB.Delete(&match.Results)
@@ -231,11 +219,7 @@ func MatchResultCreate(w http.ResponseWriter, r *http.Request) {
 	}
 	var match sql.Match
 	err = sql.DB.Model(&sql.Match{}).First(&match, info.MatchId).Error
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		h.notNil(err)
-		return
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "Match not found")
+	if !h.found(err) {
 		return
 	}
 	res := info.Result()

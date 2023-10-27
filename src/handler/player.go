@@ -2,7 +2,6 @@ package handler
 
 import (
 	"encoding/json"
-	"errors"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
 	"internal-api/src/db/sql"
@@ -43,32 +42,39 @@ func Player(w http.ResponseWriter, r *http.Request) {
 
 func Players(w http.ResponseWriter, r *http.Request) {
 	h := handler{Id: "Players", W: w}
-	if r.Method != http.MethodGet {
+	allowed := []string{http.MethodGet, http.MethodDelete}
+	if !utils.ArrStringContains(allowed, r.Method) {
 		h.badMethod()
 		return
 	}
-	var players []sql.Player
-	var err error
-	var a askPlayer
-	ok := generateAsk(&a, r)
-	if ok {
-		err = a.preload().Find(&players).Error
-	} else {
-		err = sql.DB.Find(&players).Error
+	switch r.Method {
+	case http.MethodGet:
+		var players []sql.Player
+		var err error
+		var a askPlayer
+		ok := generateAsk(&a, r)
+		if ok {
+			err = a.preload().Find(&players).Error
+		} else {
+			err = sql.DB.Find(&players).Error
+		}
+		if !h.found(err) {
+			return
+		}
+		h.respond(players)
+	case http.MethodDelete:
+		err := sql.DB.Exec("DELETE FROM players").Error
+		if err != nil {
+			h.notNil(err)
+			return
+		}
+		h.respond("Deleted")
 	}
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		h.notNil(err)
-		return
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "No players found")
-		return
-	}
-	h.respond(players)
 }
 
 func PlayerId(w http.ResponseWriter, r *http.Request) {
 	h := handler{Id: "PlayerId", W: w}
-	allowed := []string{http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPatch}
+	allowed := []string{http.MethodGet, http.MethodPut, http.MethodDelete}
 	if !utils.ArrStringContains(allowed, r.Method) {
 		h.badMethod()
 		return
@@ -88,11 +94,7 @@ func PlayerId(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = sql.DB.First(&player, id).Error
 	}
-	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-		h.notNil(err)
-		return
-	} else if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "Player not found")
+	if !h.found(err) {
 		return
 	}
 	h.respond(player)
@@ -119,8 +121,7 @@ func PlayerName(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = h.query(sql.DB, &player, "last_name = ?", name)
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "Player not found")
+	if !h.found(err) {
 		return
 	}
 	h.respond(player)
@@ -147,8 +148,7 @@ func PlayerUuid(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = h.query(sql.DB, &player, "uuid = ?", uuid)
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "Player not found")
+	if !h.found(err) {
 		return
 	}
 	h.respond(player)
@@ -175,8 +175,7 @@ func PlayerDiscord(w http.ResponseWriter, r *http.Request) {
 	} else {
 		err = h.query(sql.DB, &player, "discord_id = ?", id)
 	}
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		h.respondCode(http.StatusNotFound, "Player not found")
+	if !h.found(err) {
 		return
 	}
 	h.respond(player)
