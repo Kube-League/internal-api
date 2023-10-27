@@ -50,6 +50,8 @@ func main() {
 	// match result
 	r.HandleFunc("/match/id/{id:[0-9]+}/results", handler.MatchResult).
 		Name("match results (id)")
+	r.HandleFunc("/match/results", handler.MatchResultCreate).
+		Name("match results create")
 
 	srv := &http.Server{
 		Handler: r,

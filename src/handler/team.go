@@ -39,7 +39,7 @@ func Team(w http.ResponseWriter, r *http.Request) {
 		h.notNil(err)
 		return
 	}
-	h.respond(id)
+	h.respondCode(http.StatusCreated, id)
 }
 
 func Teams(w http.ResponseWriter, r *http.Request) {

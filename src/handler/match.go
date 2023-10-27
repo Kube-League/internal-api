@@ -129,7 +129,7 @@ func MatchTime(w http.ResponseWriter, r *http.Request) {
 
 func MatchResult(w http.ResponseWriter, r *http.Request) {
 	h := handler{Id: "MatchResult", W: w}
-	allowed := []string{http.MethodGet, http.MethodPut, http.MethodDelete, http.MethodPatch, http.MethodPost}
+	allowed := []string{http.MethodGet, http.MethodPut, http.MethodDelete}
 	if !utils.ArrStringContains(allowed, r.Method) {
 		h.badMethod()
 		return
@@ -164,16 +164,9 @@ func MatchResult(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 		h.respond(match.Results)
-	case http.MethodPost:
-		err = sql.DB.Model(&sql.Match{}).First(&match, id).Error
-		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
-			h.notNil(err)
-			return
-		} else if errors.Is(err, gorm.ErrRecordNotFound) {
-			h.respondCode(http.StatusNotFound, "Match not found")
-			return
-		}
-		b, err := io.ReadAll(r.Body)
+	case http.MethodPut:
+		var b []byte
+		b, err = io.ReadAll(r.Body)
 		if err != nil {
 			h.notNil(err)
 			return
@@ -184,15 +177,74 @@ func MatchResult(w http.ResponseWriter, r *http.Request) {
 			h.notNil(err)
 			return
 		}
-		err = sql.DB.Create(&info).Error
+		err = sql.DB.Model(&sql.Match{}).First(&match, id).Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			h.notNil(err)
+			return
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			h.respondCode(http.StatusNotFound, "Match not found")
+			return
+		}
+		res := info.Result()
+		err = sql.DB.Save(&res).Error
 		if err != nil {
 			h.notNil(err)
 			return
 		}
 		h.respond(info)
+	case http.MethodDelete:
+		err = sql.DB.Model(&sql.Match{}).
+			Preload("Results").
+			Preload("PlayersResult").
+			First(&match, id).
+			Error
+		if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+			h.notNil(err)
+			return
+		} else if errors.Is(err, gorm.ErrRecordNotFound) {
+			h.respondCode(http.StatusNotFound, "Match and result not found")
+			return
+		}
+		sql.DB.Delete(&match.Results)
+		h.respond("Deleted")
 	default:
 		h.badMethod()
 	}
+}
+
+func MatchResultCreate(w http.ResponseWriter, r *http.Request) {
+	h := handler{Id: "MatchResultCreate", W: w}
+	if r.Method != http.MethodPost {
+		h.badMethod()
+		return
+	}
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.notNil(err)
+		return
+	}
+	var info sql.ResultInfo
+	err = json.Unmarshal(b, &info)
+	if err != nil {
+		h.notNil(err)
+		return
+	}
+	var match sql.Match
+	err = sql.DB.Model(&sql.Match{}).First(&match, info.MatchId).Error
+	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
+		h.notNil(err)
+		return
+	} else if errors.Is(err, gorm.ErrRecordNotFound) {
+		h.respondCode(http.StatusNotFound, "Match not found")
+		return
+	}
+	res := info.Result()
+	err = sql.DB.Create(&res).Error
+	if err != nil {
+		h.notNil(err)
+		return
+	}
+	h.respondCode(http.StatusCreated, info)
 }
 
 func (a *askMatch) preload() *gorm.DB {

@@ -38,7 +38,7 @@ func Player(w http.ResponseWriter, r *http.Request) {
 		h.notNil(err)
 		return
 	}
-	h.respond(id)
+	h.respondCode(http.StatusCreated, id)
 }
 
 func Players(w http.ResponseWriter, r *http.Request) {
